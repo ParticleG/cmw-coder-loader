@@ -1,0 +1,14 @@
+{
+    "name": "cmw-coder-loader",
+    "version-string": "1.0.0",
+    "maintainers": [
+        "Particle_G <particle_g@outlook.com>"
+    ],
+    "description": "A DLL loader for cmw-coder",
+    "homepage": "https://github.com/ParticleG/cmw-coder-loader",
+    "documentation": "https://github.com/ParticleG/cmw-coder-loader/blob/main/README.md",
+    "license": "MIT",
+    "dependencies": [
+        "detours"
+    ]
+}
