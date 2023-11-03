@@ -182,8 +182,6 @@ BOOL SetFile(PCHAR pszPath, BOOL s_fRemove) {
     return bGood;
 }
 
-//////////////////////////////////////////////////////////////////////// main.
-//
 int CDECL main(int argc, char **argv) {
     memset(szPath, 0, sizeof(szPath));
     GetModuleFileName(nullptr, szPath, sizeof(szPath));
