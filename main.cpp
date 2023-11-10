@@ -1,9 +1,16 @@
 #include <cstdio>
+#include <filesystem>
+#include <iostream>
+#include <string>
+
 #include <windows.h>
+
 #include <detours/detours.h>
 
+using namespace std;
+
 CHAR szDllPath[1024];
-CHAR szCommand[2048];
+string szCommand;
 CHAR szPath[1024];
 
 static BOOL CALLBACK ListBywayCallback(
@@ -191,13 +198,21 @@ int CDECL main(int argc, char **argv) {
     }
 
     sprintf_s(szDllPath, ARRAYSIZE(szDllPath), "%s%s", szPath, "loaderdll.dll");
-    sprintf_s(szCommand, ARRAYSIZE(szCommand), "%s%s", szPath, "Insight3.Exe");
+    szCommand = szPath + "Insight3.Exe"s;
+
+    if (!filesystem::exists(szCommand)) {
+        szCommand = szPath + "sourceinsight4.exe"s;
+    }
+
+    if (!filesystem::exists(szCommand)) {
+        cout << "Source Insight 3.5 / 4.0 not found!" << endl;
+    }
 
 
     if (argc == 2) {
         BOOL f_install = FALSE;
         if (strcmp(argv[1], "/install") == 0) {
-            f_install = SetFile(szCommand, FALSE);
+            f_install = SetFile(szCommand.data(), FALSE);
             if (f_install == TRUE) {
                 printf("Mod ExE Success!\n");
             } else {
@@ -205,7 +220,7 @@ int CDECL main(int argc, char **argv) {
             }
             return 1;
         } else if (strcmp(argv[1], "/uninstall") == 0) {
-            f_install = SetFile(szCommand, TRUE);
+            f_install = SetFile(szCommand.data(), TRUE);
             if (f_install == TRUE) {
                 printf("UnMod ExE Success!\n");
             } else {
@@ -215,7 +230,7 @@ int CDECL main(int argc, char **argv) {
         }
             //case args
         else {
-            sprintf_s(szCommand, ARRAYSIZE(szCommand), "%s%s%s", szPath, "Insight3.Exe -p ", argv[1]);
+            szCommand = szPath + "Insight3.Exe -p "s + argv[1];
         }
     }
 
@@ -231,7 +246,7 @@ int CDECL main(int argc, char **argv) {
 
     SetLastError(0);
 
-    if (!DetourCreateProcessWithDll(nullptr, szCommand,
+    if (!DetourCreateProcessWithDll(nullptr, szCommand.data(),
                                     nullptr, nullptr, TRUE, dwFlags, nullptr, nullptr,
                                     &si, &pi, szDllPath, nullptr)) {
         DWORD dwError = GetLastError();
