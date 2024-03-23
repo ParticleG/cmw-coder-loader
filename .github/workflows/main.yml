@@ -1,0 +1,64 @@
+name: Comware Coder Loader Main CI
+
+permissions: write-all
+
+on:
+  push:
+    branches: [ main ]
+    tags: [ pre*, v* ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  get-info:
+    runs-on: ubuntu-latest
+    outputs:
+      commitHash: ${{ steps.git-info.outputs.commitHash }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Get git info
+        id: git-info
+        shell: bash
+        run: |
+          COMMIT_HASH=$(git rev-parse --short ${{ GITHUB.SHA }})
+          echo "commitHash=$COMMIT_HASH" >> $GITHUB_OUTPUT
+
+  build:
+    runs-on: windows-latest
+    needs: get-info
+    env:
+      OUTPUT_FOLDER: ./build
+      RELEASE_FOLDER: ./release
+      VCPKG_DEFAULT_TRIPLET: x86-windows
+    strategy:
+      matrix:
+        config: [ Debug, Release ]
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: 'recursive'
+      - name: Setup vcpkg
+        uses: lukka/run-vcpkg@v11
+      - name: CMake Configure and Build
+        uses: lukka/run-cmake@v10
+        with:
+          workflowPreset: ${{ matrix.config }}
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: cmw-coder-loader_${{ needs.get-info.outputs.commitHash }}_${{ GITHUB.RUN_NUMBER }}_${{ matrix.config }}
+          path: "${{ env.OUTPUT_FOLDER }}/${{ matrix.config }}"
+      - name: Prepare for release
+        if: ${{ (startsWith(github.ref, 'refs/tags/pre') || startsWith(github.ref, 'refs/tags/v')) && matrix.config == 'Release'}}
+        shell: bash
+        run: |
+          mkdir -p ${{ env.RELEASE_FOLDER }}
+          cp ${{ env.OUTPUT_FOLDER }}/${{ matrix.config }}/cmw-coder-loader.exe ${{ env.RELEASE_FOLDER }}/cmw-coder-loader.exe
+      - name: Upload release
+        if: ${{ (startsWith(github.ref, 'refs/tags/pre') || startsWith(github.ref, 'refs/tags/v')) && matrix.config == 'Release'}}
+        uses: ncipollo/release-action@v1
+        with:
+          allowUpdates: true
+          artifacts: |
+            ${{ env.RELEASE_FOLDER }}/cmw-coder-loader.exe
+          prerelease: ${{ startsWith(github.ref, 'refs/tags/pre') }}
